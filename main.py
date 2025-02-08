@@ -9,9 +9,6 @@ from core.cleanup import cleanup_temp_files
 from gui.tkinterWindow import open_window
 
 # --- other shit here --- #
-# cd C:\Users\Nate\Desktop\Coding Shit\Projects\Pinterest Proj\pinterest_wallpaper
-# python main.py
-# include a ReadMe.md w/ instructions for installation + dependencies for rough draft
 
 # --- Main Function --- #
 def main():
