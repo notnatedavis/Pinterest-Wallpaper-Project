@@ -41,6 +41,7 @@ def set_wallpaper(image_path: str) :
                 tell application "System Events"
                 set picture of every desktop to "{image_path}"
                 end tell"""
+                
             subprocess.run(["osascript", "-e", script], check=True)
             logging.info(f"Wallpaper set to: {image_path} (macOS)")
 
