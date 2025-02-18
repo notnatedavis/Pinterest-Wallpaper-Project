@@ -8,9 +8,9 @@
 3. download git by opening terminal and entering (brew install git) ["git --version" to validate download]
 4. download dos2unix by opening terminal and entering (brew install dos2unix)
 5. clone the repo & cd into repo
-6. in terminal enter (chmod +x setup.sh)
-7. in terminal enter (dos2unix setup.sh)
-8. in terminal enter (source venv/bin/activate)
-10. in terminal enter (./setup.sh)
+6. in terminal enter (dos2unix setup.sh)
+7. in terminal enter (chmod +x setup.sh)
+8. in terminal enter (./setup.sh)
+9. in terminal enter (source venv/bin/activate)
 
 ### Windows Setup
