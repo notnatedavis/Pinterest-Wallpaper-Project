@@ -50,7 +50,7 @@ def validate_and_preprocess_image(image_path: str) -> str :
     
 def get_screen_resolution() -> tuple :
     # Returns the screen resolution as (width, height)
-    # currently for windows # add macOS support
+    # triple check mac functionality
 
     try:
         os_name = platform.system()
@@ -63,13 +63,16 @@ def get_screen_resolution() -> tuple :
             return width, height
         
         elif os_name == "Darwin":
-            # For macOS, implement resolution detection if needed
-            # Placeholder values; replace with an appropriate method
-            return 1920, 1080
+            # macOS: Use AppKit to get screen resolution
+            screen = NSScreen.mainScreen()
+            frame = screen.frame()
+            width = int(frame.size.width)
+            height = int(frame.size.height)
+            return width, height
         
         else:
             logging.warning("Screen resolution detection not supported for this OS.")
-            return 1920, 1080  # Default resolution
+            return 1920, 1080  # default resolution
         
     except Exception as e:
         logging.error(f"Error getting screen resolution: {e}")
