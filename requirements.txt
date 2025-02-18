@@ -3,3 +3,4 @@ customtkinter==5.2.2
 Pillow==11.1.0
 Requests==2.32.3
 selenium==4.28.1
+pyobjc==11.0
