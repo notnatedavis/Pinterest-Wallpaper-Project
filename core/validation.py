@@ -63,13 +63,20 @@ def get_screen_resolution() -> tuple :
             return width, height
         
         elif os_name == "Darwin":
-            # macOS: Use AppKit to get screen resolution
-            screen = NSScreen.mainScreen()
-            frame = screen.frame()
-            width = int(frame.size.width)
-            height = int(frame.size.height)
-            return width, height
-        
+            try : 
+                from AppKit import NSSScreen # if fails (check PyObjC)
+                
+                screen = NSScreen.mainScreen()
+                frame = screen.frame()
+                width = int(frame.size.width)
+                height = int(frame.size.height)
+                
+                logging.info(f"Detected macOS screen resolution: {width}x{height}")
+                return width, height
+                
+            except ImportError as e:
+                logging.error(f"PyObjC not installed: {e}")
+                return 1920, 1080  # Default fallback resolution
         else:
             logging.warning("Screen resolution detection not supported for this OS.")
             return 1920, 1080  # default resolution
