@@ -1,17 +1,19 @@
 # --- Imports ---#
 import time
 import logging
+import re
 from bs4 import BeautifulSoup
+from core.pinModel import Board, Pin  # Import the Board and Pin classes
+from config import SCROLL_LIMIT, SLEEP_TIME, TEMP_FOLDER
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from config import SCROLL_LIMIT, SLEEP_TIME 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from core.pinModel import Board, Pin  # Import the Board and Pin classes
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 # --- Excluded URLs ---#
-EXCLUDED_URLS = { # annoying ass unrelated pinterest ads
+EXCLUDED_URLS = { # annoying ass unrelated pinterest ads (update ?)
     "https://www.pinterest.com/ideas/aesthetic-art/902231121155/",
     "https://www.pinterest.com/ideas/art-inspiration/919907729911/",
     "https://www.pinterest.com/ideas/art/961238559656/",
@@ -21,103 +23,156 @@ EXCLUDED_URLS = { # annoying ass unrelated pinterest ads
 
 # --- other shit here --- #
 
-# --- Functions for Main --- #
+# --- Helper Functions --- #
+def get_pin_count_element(driver) -> WebDriverWait : 
+    # try multiple strategies for retrieving pin count element
+    strategies = [
+        (By.XPATH, "//div[contains(text(), 'Pins') and contains(text(), 'Created')]"),
+        (By.XPATH, "//div[contains(., 'Pins') and contains(., 'crées')]"),
+        (By.CSS_SELECTOR, "div[data-test-id='pin-count']"),
+        (By.XPATH, "//div[contains(@class, 'PinCount')]")
+    ]
 
-def fetch_pinterest_data(board_url: str) -> Board :
-    # fetches image URLs from the given Pinterest board URL and returns a list
-
-    try:
-        # set up selenium WebDriver w/Chrome options
-        options = Options()
-        options.add_experimental_option("excludeSwitches", ["enable-logging"])
-        options.add_argument("--headless")  # toggles physical popup
-        options.add_argument("--force-device-scale-factor=0.5")  # sets zoom out before loading url !OPTIMIZE
-        options.add_argument("--disable-gpu")
-        options.add_argument("--window-size=3000,2000") # predefined window size (w x h) !OPTIMIZE
-
-        logging.info("Launching browser...")
-        driver = webdriver.Chrome(options=options)  # ensure `chromedriver` is in PATH or specify its location
-        driver.get(board_url)
-
-        time.sleep(0.2) # initial buffer
-
-        # search for total pin count w/ XPath (specific to each url ?) update universally ?
-        logging.info("Fetching total pin count...")
-
-        # fetch total pin count
-        try:
-            pin_count_element = WebDriverWait(driver, 3).until(
-                # this works ! (test on other boards)
-                EC.presence_of_element_located((By.XPATH, '//*[@id="mweb-unauth-container"]/div/div/div/div[3]/div/div[1]/div/div[2]/div[1]/div/div/span/div/div/div/div[1]'))
+    for strategy in strategies :
+        try :
+            element = WebDriverWait(driver, 2).until(
+                EC.visibility_of_element_located(strategy)
             )
-            pin_count_text = pin_count_element.text # store this var for later
-            total_pins = int(pin_count_text.split()[0])  # Extract the number from the text
-            logging.info(f"Total board Pin count : {total_pins}")
-        except Exception as e:
-            logging.warning(f"Could not determine total pin count: {e}")
-            total_pins = None
-        
-        # Create a Board object
-        board_name = board_url.split("/")[-2]  # Extract board name from URL
-        board = Board(name=board_name, url=board_url)
-        
-        scroll_increment = 1000  # Adjustable scroll increment !OPTIMIZE
-        pins_collected = 0  # Track the number of pins collected
-        seen_urls = set()  # Track URLs we've already processed
-        no_new_pins_attempts = 0  # Track how many times no new pins were found (failsafe)
-        
-        while True:
-            # Parse the page source
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
-
-            # Iterate through each <img> element
-            new_pins_added = 0
-            for img in soup.find_all("img"):
-                image_url = img.get("src")
-                if (
-                    image_url
-                    and image_url.startswith("https://i.pinimg.com/")  # Ensure it's a Pinterest image
-                    and image_url not in seen_urls  # Avoid duplicates
-                    and image_url not in EXCLUDED_URLS  # Exclude unwanted URLs
-                ) :
-                    # Add the pin to the board
-                    pin = Pin(image_url=image_url)
-                    board.add_pin(pin)
-                    pins_collected += 1
-                    seen_urls.add(image_url)
-                    new_pins_added += 1
-
-                    # Log the new pin
-                    logging.info(f"Added Pin {pins_collected}: {image_url}")
-
-                    # Stop if we've collected all pins
-                    if total_pins is not None and pins_collected >= total_pins:
-                        logging.info(f"All {total_pins} pins collected. Stopping fetch.")
-                        driver.quit()
-                        return board
-
-            logging.info(f"Found {new_pins_added} new valid URLs. Total Pins in Board: {len(board.pins)}")
-
-            # Check if no new pins were found in this iteration
-            if new_pins_added == 0:
-                no_new_pins_attempts += 1
-                if no_new_pins_attempts >= 3:  # Stop if no new pins are found after 3 attempts
-                    logging.info("No new pins found after multiple attempts. Stopping fetch.")
-                    break
-            else:
-                no_new_pins_attempts = 0  # Reset the counter if new pins were found
-
-            # Scroll to load more pins
-            current_scroll_position = driver.execute_script("return window.scrollY;")
-            driver.execute_script(f"window.scrollTo(0, {current_scroll_position + scroll_increment});")
-            time.sleep(SLEEP_TIME)  # Wait for new pins to load
-            logging.info("Scrolled to load more pins.")
-
-        driver.quit()
-
-        logging.info(f"Finished fetching data. Board '{board.name}' has {len(board.pins)} Pins.")
-        return board
+            logging.info(f"Found pin count using {strategy[0]} strategy")
+            return element
+        except TimeoutException :
+            continue
     
+    raise NoSuchElementException("Could not find pin count element using any strategy")
+
+def parse_pin_count(text: str) -> int :
+    # convert pin count text to integer
+    try :
+        clean_text = re.sub(r"[^\d,.]", "", text.split()[0])
+        if 'k' in clean_text.lower() :
+            # Fixed line: Added closing parenthesis for int()
+            return int(float(clean_text.lower().replace('k', '')) * 1000)
+        return int(clean_text.replace(",", ""))
+    except (ValueError, IndexError) as e :
+        logging.error(f"Failed to parse pin count from '{text}': {e}")
+        raise
+
+def optimized_scroll(driver, increment: int) : 
+    # more reliable scrolling w/ loading detection
+    driver.execute_script(f"""
+        window.scrollTo({{
+            top: window.scrollY + {increment},
+            behavior: 'smooth'
+        }});
+    """) # wait time here ?
+    WebDriverWait(driver, 3).until(
+        EC.presence_of_element_located((By.XPATH, "//img[contains(@src, 'pinimg.com')]"))
+    )
+
+def smart_wait(driver) :
+    # wait for critical page elements
+    try :
+        WebDriverWait(driver, 5).until(
+            lambda d: d.execute_script("return document.readyState") == "complete"
+        )
+        WebDriverWait(driver, 3).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+    except TimeoutException :
+        logging.warning("Page load timed out but proceeding anyway")
+
+# --- Main Function --- #
+def fetch_pinterest_data(board_url: str) -> Board :
+    driver = None  # Initialize driver for cleanup
+    try :
+        # --- Browser Setup --- #
+        options = Options()
+        options.add_argument("--headless")  # toggles physical popup !
+        options.add_argument("--force-device-scale-factor=0.8")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+        options.add_argument("--window-size=2000,1000")
+        options.add_argument("--disable-gpu")
+        options.add_experimental_option("excludeSwitches", ["enable-logging"])
+
+        logging.info("Initializing browser instance...")
+        driver = webdriver.Chrome(options=options)
+        driver.get(board_url)
+        smart_wait(driver)
+
+        # --- Pin Count Extraction --- #
+        logging.info("Fetching total pin count...")
+        try :
+            pin_count_element = get_pin_count_element(driver)
+    
+            # Ensure we have the pin count text before screenshot
+            pin_count_text = pin_count_element.text.strip()
+    
+            # Create temp folder if needed (with validation)
+            TEMP_FOLDER.mkdir(parents=True, exist_ok=True)
+    
+            # Save debug screenshot with path validation
+            debug_path = TEMP_FOLDER / "pin_count_debug.png"
+            driver.save_screenshot(str(debug_path.resolve()))  # Explicit path conversion
+            logging.debug(f"Saved debug screenshot to {debug_path}")
+    
+            total_pins = parse_pin_count(pin_count_text)
+            logging.info(f"Validated total pins: {total_pins}")
+        except Exception as e :
+            logging.error(f"Critical pin count error: {str(e)}", exc_info=True)
+            logging.error(f"Page source snippet:\n{driver.page_source[:1500]}")
+            raise
+        
+        # --- Board Initialization --- #
+        board_name = board_url.split("/")[-2]
+        board = Board(name=board_name, url=board_url)
+        seen_urls = set()
+        scroll_attempts = 0
+        MAX_ATTEMPTS = 3
+        
+        # --- Pin Collection Loop --- #
+        while len(board.pins) < total_pins and scroll_attempts < SCROLL_LIMIT :
+            logging.info(f"Progress: {len(board.pins)}/{total_pins} pins collected")
+            
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            new_pins = 0
+            
+            for img in soup.find_all("img") :
+                img_url = img.get("src")
+                if img_url and img_url.startswith("https://i.pinimg.com/") \
+                    and img_url not in seen_urls \
+                    and img_url not in EXCLUDED_URLS :
+                    
+                    board.add_pin(Pin(image_url=img_url))
+                    seen_urls.add(img_url)
+                    new_pins += 1
+
+                    if len(board.pins) >= total_pins :
+                        logging.info(f"Target pin count reached: {total_pins}")
+                        return board  # exit early
+
+            if new_pins > 0 :
+                scroll_attempts = 0
+                logging.info(f"Added {new_pins} new pins")
+            else :
+                scroll_attempts += 1
+                logging.warning(f"No new pins (attempt {scroll_attempts}/{MAX_ATTEMPTS})")
+                if scroll_attempts >= MAX_ATTEMPTS :
+                    break
+
+            optimized_scroll(driver, 1500)
+            time.sleep(SLEEP_TIME)
+
+        return board
+
+    # --- Outer Exception Handling --- #
     except Exception as e :
-        logging.error(f"Error fetching Pinterest data: {e}")
-        return Board(name="Error Board", url="")  # Return an empty Board in case of error
+        logging.error(f"Fatal error during fetch: {str(e)}", exc_info=True)
+        return Board(name="Error Board", url=board_url)
+    
+    # --- Mandatory Cleanup --- #
+    finally :
+        if driver :
+            driver.quit()
+            logging.info("Browser instance closed")
+        # automatic cleanup via cleanup.py will handle the temp folder
