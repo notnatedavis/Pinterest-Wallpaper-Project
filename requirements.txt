@@ -1,6 +1,13 @@
-beautifulsoup4==4.13.3
-customtkinter==5.2.2
-Pillow==11.1.0
-Requests==2.32.3
-selenium==4.28.1
+# Core Dependencies
+beautifulsoup4==4.12.3      # modern HTML parsing
+customtkinter==5.2.2        # modern GUI toolkit
+Pillow==9.1.1               # Image processing
+Pillow==11.1.0              # Image processing
+requests==2.32.3            # HTTP requests
+selenium==4.21.0            # Browser automation
+webdriver-manager==4.0.0    # Automatic driver management
 pyobjc==11.0
+
+# Additional Utilities
+python-dotenv==1.0.1        # Environment variables (optional)
+urllib3==2.2.1              # URL handling (requests dependency)
