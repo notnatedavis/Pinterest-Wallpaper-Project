@@ -1,19 +1,24 @@
 # --- Imports ---#
 import os
+import time
 import shutil
 import logging
+import platform
+from pathlib import Path
+from config import TEMP_FOLDER
 
 # --- other shit here --- #
 
 # --- Functions for Main --- #
-def cleanup_temp_files(temp_folder: str) :
-    # deletes temporary files to keep the system clean.
-
-    # only clean up if there are files in the temp folder
-    if os.path.exists(temp_folder) and os.listdir(temp_folder):
-        shutil.rmtree(temp_folder) # commented out to see functionality
-        logging.info(f"Temporary folder '{temp_folder}' cleaned up.")
-    else:
-        logging.info(f"No files to clean up in '{temp_folder}'.")
-
-    # use shutil.rmtree() directly on the folder without checking
+def cleanup_temp_files() -> None :
+    # forcefully removes temp_images folder
+    try :
+        if TEMP_FOLDER.exists() :
+            shutil.rmtree(TEMP_FOLDER, ignore_errors=True)
+            logging.info(f"Deleted temp folder: {TEMP_FOLDER}")
+            
+        # freate fresh folder (optional)
+        # TEMP_FOLDER.mkdir(exist_ok=True) # marked out (not needed atm)
+        
+    except Exception as e:
+        logging.error(f"Cleanup error: {str(e)}")
