@@ -13,9 +13,9 @@ def validate_and_preprocess_image(image_path: str) -> str :
     # validates image, resizes or converts the image if necessary, 
     # returns the path to the processed image
 
-    try:
+    try :
         # open image w/Pillow
-        with Image.open(image_path) as img:
+        with Image.open(image_path) as img :
             width, height = img.size
             logging.info(f"Original image size: {width}x{height}")
 
@@ -44,43 +44,36 @@ def validate_and_preprocess_image(image_path: str) -> str :
 
             return processed_path
 
-    except Exception as e:
+    except Exception as e :
         logging.error(f"Error validating or preprocessing image: {e}")
         return ""
     
 def get_screen_resolution() -> tuple :
-    # Returns the screen resolution as (width, height)
+    # returns the screen resolution as (width, height)
     # triple check mac functionality
 
     try:
         os_name = platform.system()
 
-        if os_name == "Windows":
+        if os_name == "Windows" :
             user32 = ctypes.windll.user32
             user32.SetProcessDPIAware()
             width = user32.GetSystemMetrics(0)
             height = user32.GetSystemMetrics(1)
             return width, height
         
-        elif os_name == "Darwin":
-            try : 
-                from AppKit import NSSScreen # if fails (check PyObjC)
-                
-                screen = NSScreen.mainScreen()
-                frame = screen.frame()
-                width = int(frame.size.width)
-                height = int(frame.size.height)
-                
-                logging.info(f"Detected macOS screen resolution: {width}x{height}")
-                return width, height
-                
-            except ImportError as e:
-                logging.error(f"PyObjC not installed: {e}")
-                return 1920, 1080  # Default fallback resolution
-        else:
+        elif os_name == "Darwin" :
+            # macOS: Use AppKit to get screen resolution
+            screen = NSScreen.mainScreen()
+            frame = screen.frame()
+            width = int(frame.size.width)
+            height = int(frame.size.height)
+            return width, height
+        
+        else :
             logging.warning("Screen resolution detection not supported for this OS.")
             return 1920, 1080  # default resolution
         
-    except Exception as e:
+    except Exception as e :
         logging.error(f"Error getting screen resolution: {e}")
         return 1920, 1080
