@@ -105,13 +105,13 @@ def fetch_pinterest_data(board_url: str) -> Board :
         try :
             pin_count_element = get_pin_count_element(driver)
     
-            # Ensure we have the pin count text before screenshot
+            # ensure pin count text exists before screenshot
             pin_count_text = pin_count_element.text.strip()
     
-            # Create temp folder if needed (with validation)
+            # create temp folder if needed (validate)
             TEMP_FOLDER.mkdir(parents=True, exist_ok=True)
     
-            # Save debug screenshot with path validation
+            # save debug screenshot w/ path validation (debugging)
             debug_path = TEMP_FOLDER / "pin_count_debug.png"
             driver.save_screenshot(str(debug_path.resolve()))  # Explicit path conversion
             logging.debug(f"Saved debug screenshot to {debug_path}")
