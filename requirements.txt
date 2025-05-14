@@ -1,3 +1,6 @@
+# all of these are needed for functionality of application, 
+# via setup.sh able to auto install requirements.txt
+
 # Core Dependencies
 beautifulsoup4==4.12.3      # modern HTML parsing
 customtkinter==5.2.2        # modern GUI toolkit
