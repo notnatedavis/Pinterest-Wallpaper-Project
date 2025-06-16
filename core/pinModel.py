@@ -7,7 +7,7 @@ class Pin :
         self.image_url = image_url
 
     def __repr__(self) :
-        return f"Pin(image_url={self.image_url})"
+        return f"Pin(image_url={self.image_url})" # this prints out 
 
 class Board :
     def __init__(self, name: str, url: str) :
@@ -21,6 +21,6 @@ class Board :
         # logging.info(f"Added Pin to Board '{self.name}': {pin}")
     
     def __repr__(self) :
-        return f"Board(name={self.name}, url={self.url}, pins={len(self.pins)})"
+        return f"Board(name={self.name}, url={self.url}, pins={len(self.pins)})" # this prints out 
 
 # --- other shit here --- #
