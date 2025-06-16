@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Variables
+# variables
 VENV_DIR="venv"
 REQUIREMENTS_FILE="requirements.txt"
 
@@ -16,7 +16,7 @@ python3 -m venv $VENV_DIR
 
 # activate virtual environment
 echo "activating virtual environment . . ."
-source $VENV_DIR/bin/activate
+source $VENV_DIR/Scripts/activate
 
 # upgrade pip
 echo "upgrading pip . . ."
@@ -30,5 +30,5 @@ else
     echo "$REQUIREMENTS_FILE not found. No dependencies to install"
 fi
 
-# Additional setup steps here
-# not done (doesnt work, yet !)
+# additional setup steps here
+# ...
