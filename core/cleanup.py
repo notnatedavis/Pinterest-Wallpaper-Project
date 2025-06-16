@@ -1,3 +1,4 @@
+# core/cleanup.py
 # --- Imports ---#
 import os
 import time
@@ -10,7 +11,7 @@ from config import TEMP_FOLDER
 # --- other shit here --- #
 
 # --- Functions for Main --- #
-def cleanup_temp_files() -> None :
+def cleanup() -> None :
     # forcefully removes temp_images folder
     try :
         if TEMP_FOLDER.exists() :
