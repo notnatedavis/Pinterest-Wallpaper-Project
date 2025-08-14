@@ -8,7 +8,7 @@ Pillow==11.1.0              # Image processing
 requests==2.32.3            # HTTP requests
 selenium==4.21.0            # Browser automation
 webdriver-manager==4.0.0    # Automatic driver management
-#pyobjc==11.0                # macOS specific only , need to update setup to only download if os = mac
+# pyobjc==11.0                # macOS specific only , need to update setup to only download if os = mac
 
 # Additional Utilities
 python-dotenv==1.0.1        # Environment variables (optional)
