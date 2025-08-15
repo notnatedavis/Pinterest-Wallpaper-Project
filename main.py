@@ -5,7 +5,7 @@ from utils.logger import logger
 from config import PRESET_SOURCE, PRESET_DESTINATION, TEMP_FOLDER
 from utils.helpers import validate_paths, ensure_temp_folder, randomly_select_image
 from core.cleanup import cleanup
-from core.fetcher import fetch_pinterest_data  # Updated import
+from core.fetcher import fetch_pinterest_data as fetch_board  # Updated import
 from core.downloader import download_image
 from core.wallpaper import set_wallpaper
 from gui.tkinterWindow import open_window
