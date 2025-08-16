@@ -12,4 +12,4 @@ webdriver-manager==4.0.0    # Automatic driver management
 
 # Additional Utilities
 python-dotenv==1.0.1        # Environment variables (optional)
-urllib3==2.2.1              # URL handling (requests dependency)
+urllib3==1.26.20              # URL handling (requests dependency)
